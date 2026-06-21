@@ -29,32 +29,34 @@ const DEFAULT = {
   junction: '', police_station: '', veh_type: '', hour: null, dow: null,
 }
 
-function FormField({ label, children }) {
+function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-[11px] font-medium text-slate-400 mb-1">{label}</label>
+      <label className="block text-[11px] font-medium mb-1" style={{ color: 'var(--text-mid)' }}>{label}</label>
       {children}
     </div>
   )
 }
 
-function StatChip({ label, value, color = '#f59e0b' }) {
+function StatCard({ label, value, color }) {
   return (
-    <div className="rounded-lg p-3 border text-center" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-      <div className="text-xl font-black" style={{ color }}>{value}</div>
-      <div className="text-[10px] text-slate-500 mt-0.5">{label}</div>
+    <div
+      className="rounded-md p-3 text-center shadow-card"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+    >
+      <div className="text-lg font-bold" style={{ color }}>{value}</div>
+      <div className="text-[10px] font-light mt-0.5" style={{ color: 'var(--text-lo)' }}>{label}</div>
     </div>
   )
 }
 
 function BarricadeMap({ barricadePoints, lat, lng }) {
   if (!barricadePoints || barricadePoints.length === 0) return null
-  const center = [lat, lng]
   return (
-    <div className="h-40 rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
-      <MapView center={center} zoom={14}>
-        <CircleMarker center={center} radius={8}
-          pathOptions={{ color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.7 }}>
+    <div className="h-36 rounded-md overflow-hidden mt-3" style={{ border: '1px solid var(--border)' }}>
+      <MapView center={[lat, lng]} zoom={14}>
+        <CircleMarker center={[lat, lng]} radius={7}
+          pathOptions={{ color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.7, weight: 1.5 }}>
           <Popup>Event location</Popup>
         </CircleMarker>
         {barricadePoints.map((b, i) => (
@@ -69,31 +71,35 @@ function BarricadeMap({ barricadePoints, lat, lng }) {
 
 function DiversionMap({ diversion, lat, lng }) {
   if (!diversion) return null
-  const center = [lat, lng]
   const hasRoute = diversion.found && diversion.route && diversion.route.length > 0
 
   if (!hasRoute) {
     return (
-      <div className="rounded-lg p-3 bg-slate-800/60 border border-slate-700 text-xs text-slate-400">
+      <div
+        className="rounded-md p-3 text-[12px] font-light leading-relaxed"
+        style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border-subtle)', color: 'var(--text-mid)' }}
+      >
         {diversion.message}
       </div>
     )
   }
 
   return (
-    <div>
-      <p className="text-xs text-green-400 mb-2">✓ {diversion.message}</p>
-      <div className="h-40 rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
-        <MapView center={diversion.route[0] || center} zoom={14}>
-          <Polyline positions={diversion.route} pathOptions={{ color: '#22c55e', weight: 3, dashArray: '8 4' }} />
-          <CircleMarker center={diversion.route[0]} radius={6}
-            pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.9 }} />
-          <CircleMarker center={diversion.route[diversion.route.length - 1]} radius={6}
-            pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.9 }} />
+    <>
+      <p className="text-[11px] text-emerald-400 font-medium mb-2">✓ {diversion.message}</p>
+      <div className="h-36 rounded-md overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+        <MapView center={diversion.route[0] || [lat, lng]} zoom={14}>
+          <Polyline positions={diversion.route} pathOptions={{ color: '#10b981', weight: 3, dashArray: '6 3' }} />
+          <CircleMarker center={diversion.route[0]} radius={5}
+            pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 1 }} />
+          <CircleMarker center={diversion.route[diversion.route.length - 1]} radius={5}
+            pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 1 }} />
         </MapView>
       </div>
-      <p className="text-[10px] text-slate-500 mt-1">{diversion.route.length} waypoints</p>
-    </div>
+      <p className="text-[10px] font-light mt-1.5" style={{ color: 'var(--text-lo)' }}>
+        {diversion.route.length} waypoints
+      </p>
+    </>
   )
 }
 
@@ -111,12 +117,10 @@ export default function EventTriage() {
 
   async function submit(e) {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const r = await api.triage(form)
       setResult(r)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -126,118 +130,146 @@ export default function EventTriage() {
 
   const durationColor = result
     ? result.predicted_duration_hours > 24 ? '#ef4444'
-    : result.predicted_duration_hours > 4 ? '#f97316' : '#22c55e'
+    : result.predicted_duration_hours > 4  ? '#f97316' : '#10b981'
     : '#f59e0b'
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      {/* Header */}
+      {/* Page header */}
       <div className="mb-6">
-        <span className="section-eyebrow">PREDICT + DEPLOY</span>
-        <h1 className="text-2xl font-bold text-slate-100 mt-0.5">Event Triage</h1>
-        <p className="text-slate-400 text-sm mt-1">
-          Click the map to place the event, fill details, and get an instant EIS score + deployment plan.
+        <p className="text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-lo)' }}>
+          Predict + Deploy
+        </p>
+        <h1 className="page-header">Event Triage</h1>
+        <p className="text-[13px] font-light mt-1" style={{ color: 'var(--text-mid)' }}>
+          Click the map to set location, fill details, and get an instant EIS score and deployment plan.
         </p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        {/* ── Left: Form (2/5) ── */}
+
+        {/* ── Left: Form ── */}
         <div className="xl:col-span-2 space-y-4">
-          {/* Map */}
-          <div className="rounded-xl overflow-hidden border" style={{ height: 220, borderColor: 'var(--border)' }}>
+
+          {/* Map picker */}
+          <div className="rounded-md overflow-hidden shadow-card" style={{ height: 220, border: '1px solid var(--border)' }}>
             <MapView onMapClick={handleMapClick}>
               <Marker position={[form.latitude, form.longitude]}>
                 <Popup>Event location<br />{form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}</Popup>
               </Marker>
             </MapView>
           </div>
-          <p className="text-[11px] text-slate-500">
-            Click map to set location · Lat {form.latitude.toFixed(5)} · Lng {form.longitude.toFixed(5)}
+          <p className="text-[11px] font-light" style={{ color: 'var(--text-lo)' }}>
+            Click map to place event · {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
           </p>
 
-          <form onSubmit={submit} className="rounded-xl border p-4 space-y-3"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="Event Cause">
-                <select className="input" value={form.event_cause} onChange={e => set('event_cause', e.target.value)}>
-                  {CAUSES.map(c => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
-                </select>
-              </FormField>
-              <FormField label="Event Type">
-                <select className="input" value={form.event_type} onChange={e => set('event_type', e.target.value)}>
-                  <option value="unplanned">Unplanned</option>
-                  <option value="planned">Planned</option>
-                </select>
-              </FormField>
-              <FormField label="Corridor">
-                <select className="input" value={form.corridor} onChange={e => set('corridor', e.target.value)}>
-                  {CORRIDORS.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </FormField>
-              <FormField label="Junction (optional)">
-                <select className="input" value={form.junction} onChange={e => set('junction', e.target.value)}>
-                  {JUNCTIONS.map(j => <option key={j} value={j}>{j || '— none —'}</option>)}
-                </select>
-              </FormField>
-              <FormField label="Police Station">
-                <input className="input" placeholder="e.g. Peenya" value={form.police_station}
-                  onChange={e => set('police_station', e.target.value)} />
-              </FormField>
-              <FormField label="Vehicle Type">
-                <select className="input" value={form.veh_type} onChange={e => set('veh_type', e.target.value)}>
-                  {VEH_TYPES.map(v => <option key={v} value={v}>{v || 'Auto-detect'}</option>)}
-                </select>
-              </FormField>
-              <FormField label="Hour IST (0–23)">
-                <input type="number" min="0" max="23" className="input" placeholder="Now"
-                  value={form.hour ?? ''} onChange={e => set('hour', e.target.value ? +e.target.value : null)} />
-              </FormField>
-              <FormField label="Day of Week (0=Mon)">
-                <input type="number" min="0" max="6" className="input" placeholder="Today"
-                  value={form.dow ?? ''} onChange={e => set('dow', e.target.value ? +e.target.value : null)} />
-              </FormField>
-            </div>
-
-            <label className="flex items-center gap-2.5 text-sm text-slate-300 cursor-pointer">
-              <input type="checkbox" checked={form.requires_road_closure}
-                onChange={e => set('requires_road_closure', e.target.checked)}
-                className="w-4 h-4 accent-amber-500" />
-              Requires road closure
-            </label>
-
-            <button type="submit" disabled={loading}
-              className="w-full py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600
-                text-slate-900 font-black text-sm rounded-xl transition-all
-                disabled:opacity-50 disabled:cursor-not-allowed
-                shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30">
-              {loading
-                ? <span className="flex items-center justify-center gap-2"><span className="animate-spin">⟳</span> Scoring…</span>
-                : '⚡ Run Triage'}
-            </button>
-            {error && (
-              <div className="rounded-lg bg-red-950/40 border border-red-800 p-3 text-xs text-red-400">
-                {error}
+          {/* Form */}
+          <div
+            className="rounded-lg p-4 shadow-card"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+          >
+            <p
+              className="text-[11px] font-medium pb-2.5 mb-3"
+              style={{ color: 'var(--text-lo)', borderBottom: '1px solid var(--border-subtle)' }}
+            >
+              Event Details
+            </p>
+            <form onSubmit={submit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Event Cause">
+                  <select className="input" value={form.event_cause} onChange={e => set('event_cause', e.target.value)}>
+                    {CAUSES.map(c => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
+                  </select>
+                </Field>
+                <Field label="Event Type">
+                  <select className="input" value={form.event_type} onChange={e => set('event_type', e.target.value)}>
+                    <option value="unplanned">Unplanned</option>
+                    <option value="planned">Planned</option>
+                  </select>
+                </Field>
+                <Field label="Corridor">
+                  <select className="input" value={form.corridor} onChange={e => set('corridor', e.target.value)}>
+                    {CORRIDORS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="Junction">
+                  <select className="input" value={form.junction} onChange={e => set('junction', e.target.value)}>
+                    {JUNCTIONS.map(j => <option key={j} value={j}>{j || '— none —'}</option>)}
+                  </select>
+                </Field>
+                <Field label="Police Station">
+                  <input className="input" placeholder="e.g. Peenya" value={form.police_station}
+                    onChange={e => set('police_station', e.target.value)} />
+                </Field>
+                <Field label="Vehicle Type">
+                  <select className="input" value={form.veh_type} onChange={e => set('veh_type', e.target.value)}>
+                    {VEH_TYPES.map(v => <option key={v} value={v}>{v || 'Auto-detect'}</option>)}
+                  </select>
+                </Field>
+                <Field label="Hour IST (0–23)">
+                  <input type="number" min="0" max="23" className="input" placeholder="Now"
+                    value={form.hour ?? ''} onChange={e => set('hour', e.target.value ? +e.target.value : null)} />
+                </Field>
+                <Field label="Day of Week (0=Mon)">
+                  <input type="number" min="0" max="6" className="input" placeholder="Today"
+                    value={form.dow ?? ''} onChange={e => set('dow', e.target.value ? +e.target.value : null)} />
+                </Field>
               </div>
-            )}
-          </form>
+
+              <label className="flex items-center gap-2.5 cursor-pointer text-[13px] font-light" style={{ color: 'var(--text-mid)' }}>
+                <input type="checkbox" checked={form.requires_road_closure}
+                  onChange={e => set('requires_road_closure', e.target.checked)}
+                  className="w-3.5 h-3.5 accent-amber-500" />
+                Requires road closure
+              </label>
+
+              <button type="submit" disabled={loading} className="btn-primary w-full py-3 text-sm">
+                {loading
+                  ? <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+                      </svg>
+                      Scoring…
+                    </span>
+                  : '⚡  Run Triage'}
+              </button>
+
+              {error && (
+                <div
+                  className="rounded-md p-3 text-xs"
+                  style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}
+                >
+                  {error}
+                </div>
+              )}
+            </form>
+          </div>
         </div>
 
-        {/* ── Right: Results (3/5) ── */}
+        {/* ── Right: Results ── */}
         <div className="xl:col-span-3 space-y-4">
           {result ? (
             <>
-              {/* EIS + stats row */}
-              <div className="rounded-xl border p-5 flex items-center gap-6"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+              {/* EIS row */}
+              <div
+                className="rounded-lg p-5 flex items-center gap-6 shadow-card"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+              >
                 <EISGauge score={result.eis} size="lg" />
-                <div className="flex-1 grid grid-cols-2 gap-3">
-                  <StatChip label="Predicted Duration" value={`${result.predicted_duration_hours.toFixed(1)} h`} color={durationColor} />
-                  <StatChip label="Closure Probability" value={`${(result.closure_probability * 100).toFixed(0)}%`}
-                    color={result.closure_probability > 0.5 ? '#ef4444' : '#22c55e'} />
-                  <div className="rounded-lg p-3 border col-span-2" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'var(--border)' }}>
-                    <div className="text-[10px] text-slate-500 mb-1">Event ID</div>
-                    <div className="font-mono text-amber-400 text-sm font-bold">{result.event_id}</div>
+                <div className="flex-1 grid grid-cols-2 gap-2.5">
+                  <StatCard label="Predicted Duration" value={`${result.predicted_duration_hours.toFixed(1)} h`} color={durationColor} />
+                  <StatCard
+                    label="Closure Probability"
+                    value={`${(result.closure_probability * 100).toFixed(0)}%`}
+                    color={result.closure_probability > 0.5 ? '#ef4444' : '#10b981'}
+                  />
+                  <div
+                    className="rounded-md p-3 col-span-2 shadow-card"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+                  >
+                    <div className="text-[10px] font-medium mb-1" style={{ color: 'var(--text-lo)' }}>Event ID</div>
+                    <div className="font-mono text-amber-400 text-sm font-semibold">{result.event_id}</div>
                   </div>
                 </div>
               </div>
@@ -246,73 +278,76 @@ export default function EventTriage() {
               <ComponentBreakdown components={result.components} />
 
               {/* Manpower */}
-              <RecommendationCard icon="👮" title="Manpower Deployment" accent="#f59e0b"
-                badge={`${result.manpower.count} officers`}>
-                <div className="flex items-end gap-4">
+              <RecommendationCard icon="👮" title="Manpower" accent="#f59e0b" badge={`${result.manpower.count} officers`}>
+                <div className="flex items-start gap-4">
                   <div>
-                    <span className="text-4xl font-black text-amber-400">{result.manpower.count}</span>
-                    <span className="text-slate-400 text-sm ml-1">officers</span>
+                    <span className="text-3xl font-bold text-amber-400">{result.manpower.count}</span>
+                    <span className="text-xs font-light ml-1.5" style={{ color: 'var(--text-mid)' }}>officers</span>
                   </div>
-                  {/* EIS band visual */}
                   <div className="flex-1 space-y-1">
                     {[
-                      { label: 'EIS 80–100 → 6–8', active: result.eis >= 80 },
-                      { label: 'EIS 50–79 → 3–5',  active: result.eis >= 50 && result.eis < 80 },
-                      { label: 'EIS 20–49 → 1–2',  active: result.eis >= 20 && result.eis < 50 },
-                      { label: 'EIS 0–19 → monitor', active: result.eis < 20 },
+                      { label: 'EIS 80–100 → 6–8',     active: result.eis >= 80 },
+                      { label: 'EIS 50–79 → 3–5',      active: result.eis >= 50 && result.eis < 80 },
+                      { label: 'EIS 20–49 → 1–2',      active: result.eis >= 20 && result.eis < 50 },
+                      { label: 'EIS 0–19 → monitor',   active: result.eis < 20 },
                     ].map(b => (
-                      <div key={b.label} className={`text-[10px] px-2 py-0.5 rounded transition-colors ${b.active ? 'bg-amber-500/20 text-amber-300 font-semibold' : 'text-slate-600'}`}>
+                      <div
+                        key={b.label}
+                        className="text-xs px-2 py-0.5 rounded transition-colors"
+                        style={b.active
+                          ? { background: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }
+                          : { color: 'var(--text-lo)' }}
+                      >
                         {b.label}
                       </div>
                     ))}
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 mt-3 leading-relaxed border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                <p
+                  className="text-xs font-light leading-relaxed mt-3 pt-3"
+                  style={{ borderTop: '1px solid var(--border-subtle)', color: 'var(--text-mid)' }}
+                >
                   {result.manpower.rationale}
                 </p>
               </RecommendationCard>
 
               {/* Barricade Points */}
-              <RecommendationCard icon="🚧" title="Barricade Points" accent="#f97316"
-                badge={`${result.barricade_points.length} points`}>
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    {result.barricade_points.map((b, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className="w-5 h-5 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 font-bold text-[10px]">
-                          {i + 1}
-                        </span>
-                        <span className="text-slate-300 flex-1">{b.label}</span>
-                        <span className="text-slate-500 font-mono text-[10px]">
-                          {b.lat.toFixed(4)}, {b.lng.toFixed(4)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <BarricadeMap
-                    barricadePoints={result.barricade_points}
-                    lat={form.latitude}
-                    lng={form.longitude}
-                  />
+              <RecommendationCard icon="🚧" title="Barricade Points" accent="#f97316" badge={`${result.barricade_points.length} points`}>
+                <div className="space-y-1.5">
+                  {result.barricade_points.map((b, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span
+                        className="w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.25)' }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="flex-1 font-light" style={{ color: 'var(--text-mid)' }}>{b.label}</span>
+                      <span className="font-mono text-[10px]" style={{ color: 'var(--text-lo)' }}>
+                        {b.lat.toFixed(4)}, {b.lng.toFixed(4)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
+                <BarricadeMap barricadePoints={result.barricade_points} lat={form.latitude} lng={form.longitude} />
               </RecommendationCard>
 
               {/* Diversion */}
-              <RecommendationCard icon="🔀" title="Diversion Route" accent="#22c55e"
+              <RecommendationCard icon="🔀" title="Diversion" accent="#10b981"
                 badge={result.diversion.found ? 'Route found' : 'No route'}>
-                <DiversionMap
-                  diversion={result.diversion}
-                  lat={form.latitude}
-                  lng={form.longitude}
-                />
+                <DiversionMap diversion={result.diversion} lat={form.latitude} lng={form.longitude} />
               </RecommendationCard>
             </>
           ) : (
-            <div className="h-80 xl:h-full flex flex-col items-center justify-center rounded-xl border"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-              <div className="text-6xl mb-4 opacity-30">⚡</div>
-              <p className="text-slate-500 text-sm font-medium">Submit a triage request to see results</p>
-              <p className="text-slate-600 text-xs mt-1">EIS score · Duration · Manpower · Barricades · Diversion</p>
+            <div
+              className="h-72 xl:h-full flex flex-col items-center justify-center rounded-lg shadow-card"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            >
+              <div className="text-5xl mb-4 opacity-20">⚡</div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-mid)' }}>Submit a triage request to see results</p>
+              <p className="text-xs font-light mt-1" style={{ color: 'var(--text-lo)' }}>
+                EIS score · Duration · Manpower · Barricades · Diversion
+              </p>
             </div>
           )}
         </div>

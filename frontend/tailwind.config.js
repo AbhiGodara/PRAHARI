@@ -4,15 +4,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        surface: '#131e35',
-        card:    '#1a2640',
-        border:  '#253351',
+        surface:  '#0d1424',
+        card:     '#111827',
+        elevated: '#1a2235',
+        border:   '#1e2d42',
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
-      backgroundImage: {
-        'grid-pattern': "url(\"data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none'/%3E%3Cpath d='M0 .5h40M.5 0v40' stroke='%23253351' stroke-opacity='.3'/%3E%3C/svg%3E\")",
+      boxShadow: {
+        'card':     '0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
+        'card-lg':  '0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3)',
+        'dropdown': '0 8px 24px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)',
+        'focus':    '0 0 0 2px rgba(245,158,11,0.2)',
+      },
+      fontSize: {
+        '2xs': '0.6875rem', // 11px
       },
     },
   },
