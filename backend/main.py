@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config import FRONTEND_ORIGIN
+from config import FRONTEND_ORIGINS
 from db import init_db
 from routers import events, allocator, debrief, learn, insights
 
@@ -8,7 +8,7 @@ app = FastAPI(title="PRAHARI", description="Event-Driven Congestion Intelligence
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN],
+    allow_origins=FRONTEND_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,0 +1,67 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.cover
+
+# === Virtual environments ===
+venv/
+env/
+.env
+.venv/
+
+# === Secrets & local config ===
+.env.local
+.env.*.local
+*.secret
+
+# === Raw data — do NOT push (large, may be sensitive) ===
+data/raw/
+# The processed parquet and trained models ARE committed per spec (see README):
+# backend/data/processed/*.parquet  ← commit this
+# backend/models_store/*.joblib     ← commit this
+
+# === SQLite dev database ===
+backend/prahari.db
+
+# === Node / Frontend ===
+node_modules/
+frontend/dist/
+frontend/.vite/
+.npm/
+
+# === OS junk ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === Jupyter ===
+.ipynb_checkpoints/
+*.ipynb
+
+# === Logs ===
+*.log
+logs/
+
+# === Coverage ===
+.nyc_output/
+coverage/

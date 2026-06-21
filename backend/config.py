@@ -45,4 +45,5 @@ TRAIN_TEST_SPLIT_DATE = "2024-03-01"
 # Diversion search radius (degrees, ~300m)
 DIVERSION_RADIUS_DEG = 0.003
 
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+_raw_origins = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+FRONTEND_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]

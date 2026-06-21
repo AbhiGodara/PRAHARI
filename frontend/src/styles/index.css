@@ -4,10 +4,10 @@
 
 /* ── PRAHARI design tokens ─────────────────────────────── */
 :root {
-  --bg-base:    #0b1120;
-  --bg-surface: #131e35;
-  --bg-card:    #1a2640;
-  --border:     #253351;
+  --bg-base:    #080f1e;
+  --bg-surface: #0e1828;
+  --bg-card:    #131e32;
+  --border:     #1e2e47;
   --accent:     #f59e0b;
   --accent-dim: #d97706;
   --text-hi:    #f1f5f9;
@@ -16,38 +16,60 @@
 }
 
 /* ── Base ─────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
 body {
   background-color: var(--bg-base);
   color: var(--text-hi);
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Scrollbar (subtle) ─────────────────────────────────  */
-::-webkit-scrollbar        { width: 6px; height: 6px; }
-::-webkit-scrollbar-track  { background: var(--bg-base); }
-::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #2d4263; }
 
-/* ── Leaflet map ────────────────────────────────────────  */
-.leaflet-container { background: #0b1120 !important; }
+/* ── Hide scrollbar (utility) ──────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Leaflet map dark override ─────────────────────────── */
+.leaflet-container { background: #080f1e !important; }
+.leaflet-control-zoom a {
+  background: var(--bg-card) !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+.leaflet-control-zoom a:hover { background: #1e2e47 !important; color: var(--text-hi) !important; }
 .leaflet-popup-content-wrapper {
   background: var(--bg-card) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-hi) !important;
   border-radius: 10px !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,.5) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,.6) !important;
 }
-.leaflet-popup-tip { background: var(--bg-card) !important; }
-.leaflet-popup-close-button { color: var(--text-mid) !important; }
+.leaflet-popup-tip          { background: var(--bg-card) !important; }
+.leaflet-popup-close-button { color: var(--text-mid) !important; top: 6px !important; right: 8px !important; }
+.leaflet-popup-close-button:hover { color: var(--text-hi) !important; }
+.leaflet-attribution-flag   { display: none !important; }
 
-/* ── Form inputs ────────────────────────────────────────  */
+/* ── Form inputs ────────────────────────────────────────── */
 .input {
-  @apply bg-slate-800/70 text-slate-200 text-sm rounded-lg px-3 py-2
-         border border-slate-700 focus:outline-none focus:border-amber-500
-         placeholder-slate-500 transition-colors w-full;
+  @apply w-full text-slate-200 text-sm rounded-lg px-3 py-2
+         border focus:outline-none focus:ring-1 focus:ring-amber-500/50
+         placeholder-slate-600 transition-all duration-150;
+  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--border);
 }
+.input:focus { border-color: #f59e0b99; background: rgba(15, 23, 42, 0.95); }
+.input:hover:not(:focus) { border-color: #2d4263; }
 
-/* ── Cards ──────────────────────────────────────────────  */
+select.input option { background: #131e32; color: #f1f5f9; }
+
+/* ── Cards ──────────────────────────────────────────────── */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -55,20 +77,48 @@ body {
   padding: 1.25rem;
 }
 
-/* ── Badge pills ─────────────────────────────────────── */
-.badge-red    { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-red-900/50    text-red-400    border border-red-800; }
-.badge-amber  { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-900/50  text-amber-400  border border-amber-800; }
-.badge-yellow { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-800; }
-.badge-green  { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-green-900/50  text-green-400  border border-green-800; }
+/* ── Badge pills ─────────────────────────────────────────── */
+.badge-red    { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-red-900/40    text-red-400    border border-red-800/50; }
+.badge-amber  { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-900/40  text-amber-400  border border-amber-800/50; }
+.badge-green  { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-green-900/40  text-green-400  border border-green-800/50; }
+.badge-blue   { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-900/40   text-blue-400   border border-blue-800/50; }
 
-/* ── Section headings ────────────────────────────────── */
+/* ── Section eyebrow labels ──────────────────────────────── */
 .section-eyebrow {
   @apply text-xs font-bold tracking-widest uppercase text-amber-500;
 }
 
-/* ── Recharts dark override ─────────────────────────── */
+/* ── Recharts dark theme ─────────────────────────────────── */
 .recharts-tooltip-wrapper .recharts-default-tooltip {
   background: var(--bg-card) !important;
   border: 1px solid var(--border) !important;
   border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5) !important;
+}
+.recharts-legend-item-text { color: #94a3b8 !important; }
+.recharts-cartesian-axis-tick-value { fill: #64748b !important; }
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse-slow { animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* ── Range input ─────────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  background: var(--border);
+  border-radius: 4px;
+  height: 5px;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f59e0b;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(245,158,11,0.5);
 }
