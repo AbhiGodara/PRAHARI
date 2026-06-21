@@ -1,0 +1,73 @@
+{
+  "mae_hours": 49.967,
+  "naive_floor_mae": 53.628,
+  "beat_floor_by": 3.66,
+  "best_config": "log_q35_tw",
+  "n_train": 1977,
+  "n_test": 1004,
+  "all_results": [
+    {
+      "label": "log_q35_tw",
+      "mae_hours": 49.967,
+      "rmse_hours": 123.005,
+      "target": "log",
+      "time_weighted": true
+    },
+    {
+      "label": "raw_q30_deep_tw",
+      "mae_hours": 50.411,
+      "rmse_hours": 123.045,
+      "target": "raw",
+      "time_weighted": true
+    },
+    {
+      "label": "raw_q28_tw",
+      "mae_hours": 50.685,
+      "rmse_hours": 124.307,
+      "target": "raw",
+      "time_weighted": true
+    },
+    {
+      "label": "log_q30_tw",
+      "mae_hours": 50.785,
+      "rmse_hours": 123.312,
+      "target": "log",
+      "time_weighted": true
+    },
+    {
+      "label": "raw_q30_tw",
+      "mae_hours": 50.889,
+      "rmse_hours": 123.021,
+      "target": "raw",
+      "time_weighted": true
+    },
+    {
+      "label": "raw_q35_tw",
+      "mae_hours": 51.221,
+      "rmse_hours": 120.474,
+      "target": "raw",
+      "time_weighted": true
+    },
+    {
+      "label": "raw_q32_no_tw",
+      "mae_hours": 51.279,
+      "rmse_hours": 122.495,
+      "target": "raw",
+      "time_weighted": false
+    },
+    {
+      "label": "raw_q32_tw",
+      "mae_hours": 51.334,
+      "rmse_hours": 121.644,
+      "target": "raw",
+      "time_weighted": true
+    },
+    {
+      "label": "raw_q35_deep_tw",
+      "mae_hours": 52.754,
+      "rmse_hours": 120.393,
+      "target": "raw",
+      "time_weighted": true
+    }
+  ]
+}
