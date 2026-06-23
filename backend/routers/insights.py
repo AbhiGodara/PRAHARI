@@ -9,6 +9,7 @@ from data_pipeline import load_processed
 
 router = APIRouter(prefix="/insights")
 _df = None
+_summary_cache = None  # cached response — data is static
 
 
 def get_df():
@@ -20,6 +21,9 @@ def get_df():
 
 @router.get("/summary", response_model=InsightsSummaryResponse)
 def summary():
+    global _summary_cache
+    if _summary_cache is not None:
+        return _summary_cache
     df = get_df()
 
     # 1. Hour-by-cause counts
@@ -68,10 +72,11 @@ def summary():
                                                           n_slots=int(r["n_slots"]))
                                  for _, r in dist.iterrows()]
 
-    return InsightsSummaryResponse(
+    _summary_cache = InsightsSummaryResponse(
         hour_by_cause=hour_by_cause,
         duration_by_cause=duration_by_cause,
         closure_rate_by_cause=closure_rate_by_cause,
         spatial_concentration=spatial,
         concurrency_distribution=concurrency_distribution,
     )
+    return _summary_cache

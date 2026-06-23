@@ -24,6 +24,13 @@ app.include_router(insights.router, prefix="/api")
 @app.on_event("startup")
 def startup():
     init_db()
+    # Pre-warm: load parquet + ML models at startup so first request is instant
+    from routers.events import get_df, active_events
+    from eis import _load_models
+    get_df()
+    _load_models()
+    # Pre-compute and cache active events so Live Map loads instantly
+    active_events(cause=None, zone=None)  # populates _active_events_cache_bytes
 
 
 @app.get("/api/health")

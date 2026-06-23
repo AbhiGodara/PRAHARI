@@ -2,6 +2,7 @@ import uuid
 import json
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from schemas import (
     ActiveEventsResponse, HeatmapResponse, TriageRequest, TriageResponse,
@@ -9,11 +10,13 @@ from schemas import (
 )
 from db import get_db, Prediction
 from data_pipeline import load_processed
-from eis import score_event
+from eis import score_event, score_events_batch
 from deploy_logic import recommend_manpower, recommend_barricade_points, recommend_diversion
 
 router = APIRouter(prefix="/events")
 _df = None
+_active_events_cache_bytes = None   # cached raw JSON bytes — skip serialization overhead
+_heatmap_cache_bytes = None         # cached raw JSON bytes
 
 
 def get_df():
@@ -23,8 +26,13 @@ def get_df():
     return _df
 
 
-@router.get("/active", response_model=ActiveEventsResponse)
+@router.get("/active")
 def active_events(cause: str = Query(None), zone: str = Query(None)):
+    global _active_events_cache_bytes
+    # Serve from cache when no filters (the common/demo case) — skips all serialization
+    if cause is None and zone is None and _active_events_cache_bytes is not None:
+        return Response(content=_active_events_cache_bytes, media_type="application/json")
+
     df = get_df()
     active = df[df["is_currently_active"]].copy()
     if cause:
@@ -33,23 +41,33 @@ def active_events(cause: str = Query(None), zone: str = Query(None)):
         active = active[active["zone"] == zone]
 
     active_df = df[df["is_currently_active"]]
-    events = []
-    for _, row in active.head(200).iterrows():
-        event_dict = {
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "event_cause": row["event_cause"],
-            "event_type": row.get("event_type", "unplanned"),
+    subset = active.head(100)
+
+    # Build event dicts for batch scoring
+    event_dicts = []
+    for _, row in subset.iterrows():
+        event_dicts.append({
+            "event_id":             str(row.get("id", "")),
+            "latitude":             row["latitude"],
+            "longitude":            row["longitude"],
+            "event_cause":          row["event_cause"],
+            "event_type":           row.get("event_type", "unplanned"),
             "requires_road_closure": row["requires_road_closure"],
-            "corridor": row.get("corridor", "Non-corridor"),
-            "junction": row.get("junction", ""),
-            "police_station": row.get("police_station", ""),
-            "veh_type": row.get("veh_type", "unknown"),
-            "hour": row.get("hour"),
-            "dow": row.get("dow"),
-            "priority": row.get("priority", "High"),
-        }
-        scored = score_event(event_dict, active_df)
+            "corridor":             row.get("corridor", "Non-corridor"),
+            "junction":             row.get("junction", ""),
+            "police_station":       row.get("police_station", ""),
+            "veh_type":             row.get("veh_type", "unknown"),
+            "hour":                 row.get("hour"),
+            "dow":                  row.get("dow"),
+            "priority":             row.get("priority", "High"),
+        })
+
+    # Batch score all events in ONE ML call instead of 100 individual calls
+    scored_list = score_events_batch(event_dicts, active_df)
+
+    events = []
+    for i, (_, row) in enumerate(subset.iterrows()):
+        scored = scored_list[i]
         events.append(ActiveEvent(
             event_id=str(row.get("id", "")),
             latitude=float(row["latitude"]),
@@ -61,11 +79,19 @@ def active_events(cause: str = Query(None), zone: str = Query(None)):
             requires_road_closure=bool(row["requires_road_closure"]),
             start_datetime=str(row.get("start_datetime", "")),
         ))
-    return ActiveEventsResponse(events=events)
+    result = ActiveEventsResponse(events=events)
+    result_bytes = result.model_dump_json().encode()
+    # Cache only the unfiltered result as raw bytes
+    if cause is None and zone is None:
+        _active_events_cache_bytes = result_bytes
+    return Response(content=result_bytes, media_type="application/json")
 
 
-@router.get("/heatmap", response_model=HeatmapResponse)
+@router.get("/heatmap")
 def heatmap():
+    global _heatmap_cache_bytes
+    if _heatmap_cache_bytes is not None:
+        return Response(content=_heatmap_cache_bytes, media_type="application/json")
     df = get_df()
     counts = df.groupby(["gy", "gx"]).size().reset_index(name="n")
     max_n = counts["n"].max()
@@ -73,7 +99,9 @@ def heatmap():
         [float(r["gy"]), float(r["gx"]), float(r["n"] / max_n)]
         for _, r in counts.iterrows()
     ]
-    return HeatmapResponse(points=points)
+    result = HeatmapResponse(points=points)
+    _heatmap_cache_bytes = result.model_dump_json().encode()
+    return Response(content=_heatmap_cache_bytes, media_type="application/json")
 
 
 @router.post("/triage", response_model=TriageResponse)

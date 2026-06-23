@@ -48,6 +48,100 @@ def _load_models():
         _cause_stats = load_cause_stats()
 
 
+def score_events_batch(event_dicts: list, df_active=None) -> list:
+    """Score multiple events in one batched ML call — much faster than calling score_event() N times."""
+    _load_models()
+    if not event_dicts:
+        return []
+
+    now = pd.Timestamp.now(tz="Asia/Kolkata")
+
+    rows = []
+    for ed in event_dicts:
+        cause  = str(ed.get("event_cause", "others")).lower().strip()
+        _h = ed.get("hour"); hour = int(_h) if _h is not None and pd.notna(_h) else now.hour
+        _d = ed.get("dow");  dow  = int(_d) if _d is not None and pd.notna(_d) else now.dayofweek
+        _m = ed.get("month"); month = int(_m) if _m is not None and pd.notna(_m) else now.month
+        rows.append({
+            "event_cause":           cause,
+            "event_type":            str(ed.get("event_type") or "unplanned"),
+            "hour":                  hour,
+            "dow":                   dow,
+            "is_weekend":            int(dow in [5, 6]),
+            "month":                 month,
+            "corridor":              str(ed.get("corridor") or "Non-corridor"),
+            "veh_type":              str(ed.get("veh_type") or "unknown"),
+            "priority":              ed.get("priority", "High"),
+            "requires_road_closure": bool(ed.get("requires_road_closure", False)),
+            "latitude":              float(ed["latitude"]),
+            "longitude":             float(ed["longitude"]),
+            "junction":              str(ed.get("junction") or ""),
+            "police_station":        str(ed.get("police_station") or ""),
+            "zone":                  str(ed.get("zone") or "unknown"),
+        })
+
+    batch_df = pd.DataFrame(rows)
+
+    # Feature engineering — vectorized, runs once for all events
+    batch_eng = add_engineered_features(batch_df, _cause_stats, _priors)
+
+    X_dur = prepare_X(batch_eng, for_closure=False)
+    X_clo = prepare_X(batch_eng, for_closure=True)
+
+    dur_pipeline = _dur_bundle["pipeline"]
+    use_log = _dur_bundle["use_log_target"]
+    raw_preds = dur_pipeline.predict(X_dur)
+    predicted_durations = np.where(
+        use_log, np.expm1(raw_preds), raw_preds
+    ).clip(min=0).tolist()
+
+    closure_probs = _closure_model.predict_proba(X_clo)[:, 1].tolist()
+
+    results = []
+    for i, ed in enumerate(event_dicts):
+        cause    = rows[i]["event_cause"]
+        lat      = rows[i]["latitude"]
+        lng      = rows[i]["longitude"]
+        junction = rows[i]["junction"]
+        police_station = rows[i]["police_station"]
+
+        location_score = lookup_location_criticality(lat, lng, junction, _priors, GRID_RESOLUTION)
+
+        concurrency_score = 0.0
+        if df_active is not None and police_station and "police_station" in df_active.columns:
+            n_concurrent = (df_active["police_station"] == police_station).sum()
+            concurrency_score = min(1.0, n_concurrent / 10.0)
+
+        cause_severity    = CAUSE_SEVERITY_MAP.get(cause, 0.35)
+        predicted_duration = float(predicted_durations[i])
+        closure_prob       = float(closure_probs[i])
+        dur_norm           = min(1.0, predicted_duration / EIS_DURATION_CAP_HOURS)
+
+        eis = 100 * (
+            EIS_WEIGHT_DURATION      * dur_norm
+            + EIS_WEIGHT_CLOSURE     * closure_prob
+            + EIS_WEIGHT_LOCATION    * location_score
+            + EIS_WEIGHT_CONCURRENCY * concurrency_score
+            + EIS_WEIGHT_CAUSE_SEVERITY * cause_severity
+        )
+        eis = float(np.clip(eis, 0, 100))
+
+        results.append({
+            "event_id":   str(ed.get("event_id", uuid.uuid4().hex[:8].upper())),
+            "eis":        round(eis, 2),
+            "predicted_duration_hours": round(predicted_duration, 2),
+            "closure_probability":      round(closure_prob, 3),
+            "components": {
+                "duration_score":       round(dur_norm * 100, 2),
+                "closure_score":        round(closure_prob * 100, 2),
+                "location_score":       round(location_score * 100, 2),
+                "concurrency_score":    round(concurrency_score * 100, 2),
+                "cause_severity_score": round(cause_severity * 100, 2),
+            },
+        })
+    return results
+
+
 def score_event(event_dict: dict, df_active=None) -> dict:
     _load_models()
 
